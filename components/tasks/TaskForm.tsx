@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { Sparkles, Zap, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, Label } from '@/components/ui/Input';
@@ -45,6 +46,8 @@ export function TaskForm({ isOpen, onClose, taskId }: TaskFormProps) {
     });
 
     const [errors, setErrors] = useState<{ title?: string }>({});
+    const [isEnhancing, setIsEnhancing] = useState(false);
+    const [isBreakingDown, setIsBreakingDown] = useState(false);
 
     // Reset form when task changes
     useEffect(() => {
@@ -69,6 +72,63 @@ export function TaskForm({ isOpen, onClose, taskId }: TaskFormProps) {
         }
         setErrors({});
     }, [existingTask, isOpen]);
+
+    const handleEnhance = async () => {
+        if (!formData.title.trim()) {
+            toast.error('Please add a title first');
+            return;
+        }
+        setIsEnhancing(true);
+        try {
+            const response = await fetch('/api/ai/enhance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: formData.title,
+                    description: formData.description
+                })
+            });
+            const data = await response.json();
+            if (data.enhanced) {
+                setFormData(prev => ({ ...prev, description: data.enhanced }));
+                toast.success('Description enhanced! ✨');
+            }
+        } catch (error) {
+            toast.error('Failed to enhance description');
+        } finally {
+            setIsEnhancing(false);
+        }
+    };
+
+    const handleBreakdown = async () => {
+        if (!formData.title.trim()) {
+            toast.error('Please add a title first');
+            return;
+        }
+        setIsBreakingDown(true);
+        try {
+            const response = await fetch('/api/ai/breakdown', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: formData.title,
+                    description: formData.description
+                })
+            });
+            const data = await response.json();
+            if (data.breakdown) {
+                const newDesc = formData.description
+                    ? `${formData.description}\n\n## Subtasks\n${data.breakdown}`
+                    : `## Subtasks\n${data.breakdown}`;
+                setFormData(prev => ({ ...prev, description: newDesc }));
+                toast.success('Task broken down! ⚡');
+            }
+        } catch (error) {
+            toast.error('Failed to break down task');
+        } finally {
+            setIsBreakingDown(false);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -137,7 +197,51 @@ export function TaskForm({ isOpen, onClose, taskId }: TaskFormProps) {
 
                 {/* Description */}
                 <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="description">Description</Label>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={handleEnhance}
+                                disabled={isEnhancing || isBreakingDown}
+                                className={cn(
+                                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium',
+                                    'bg-gradient-to-r from-amber-500/10 to-orange-500/10',
+                                    'text-amber-600 dark:text-amber-400',
+                                    'hover:from-amber-500/20 hover:to-orange-500/20',
+                                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                                    'transition-all duration-200'
+                                )}
+                            >
+                                {isEnhancing ? (
+                                    <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                    <Sparkles size={12} />
+                                )}
+                                Enhance
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleBreakdown}
+                                disabled={isEnhancing || isBreakingDown}
+                                className={cn(
+                                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium',
+                                    'bg-gradient-to-r from-violet-500/10 to-purple-500/10',
+                                    'text-violet-600 dark:text-violet-400',
+                                    'hover:from-violet-500/20 hover:to-purple-500/20',
+                                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                                    'transition-all duration-200'
+                                )}
+                            >
+                                {isBreakingDown ? (
+                                    <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                    <Zap size={12} />
+                                )}
+                                Break Down
+                            </button>
+                        </div>
+                    </div>
                     <Textarea
                         id="description"
                         placeholder="Add more details about this task..."
@@ -145,7 +249,7 @@ export function TaskForm({ isOpen, onClose, taskId }: TaskFormProps) {
                         onChange={(e) =>
                             setFormData({ ...formData, description: e.target.value })
                         }
-                        rows={3}
+                        rows={4}
                     />
                 </div>
 
