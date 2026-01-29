@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
-    Sparkles,
+    BarChart3,
     ChevronLeft,
     ChevronRight,
     Settings,
@@ -29,9 +29,9 @@ const mainNavItems: NavItem[] = [
         icon: <LayoutDashboard size={20} strokeWidth={1.5} />,
     },
     {
-        label: 'AI Assistant',
-        href: '/chat',
-        icon: <Sparkles size={20} strokeWidth={1.5} />,
+        label: 'Analytics',
+        href: '/analytics',
+        icon: <BarChart3 size={20} strokeWidth={1.5} />,
     },
 ];
 
