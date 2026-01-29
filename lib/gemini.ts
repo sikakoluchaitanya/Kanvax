@@ -54,3 +54,95 @@ Return the JSON array of tasks:`;
         throw new Error('Failed to extract tasks. Please try again.');
     }
 }
+
+/**
+ * Enhance a brief description into a more detailed, professional one
+ */
+export async function enhanceDescription(title: string, briefDescription: string): Promise<string> {
+    const prompt = `You are a professional task description writer. Take the brief task info and enhance it into a clear, actionable description.
+
+Task Title: "${title}"
+Brief Description: "${briefDescription || 'No description provided'}"
+
+Write an enhanced description that:
+1. Is 2-3 sentences maximum
+2. Clarifies the goal and expected outcome
+3. Uses professional, clear language
+4. Stays focused and actionable
+
+Return ONLY the enhanced description text, no quotes, no explanation.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { temperature: 0.7 }
+        });
+        return response.text?.trim() || briefDescription;
+    } catch (error) {
+        console.error('Gemini enhance error:', error);
+        throw new Error('Failed to enhance description.');
+    }
+}
+
+/**
+ * Break down a task into smaller subtasks as a markdown checklist
+ */
+export async function breakdownTask(title: string, description: string): Promise<string> {
+    const prompt = `You are a task breakdown expert. Break this task into 3-6 smaller, actionable subtasks.
+
+Task: "${title}"
+Context: "${description || 'No additional context'}"
+
+Return ONLY a markdown checklist (no intro text) like:
+- [ ] First subtask
+- [ ] Second subtask
+- [ ] Third subtask
+
+Keep subtasks specific and actionable. Start each with a verb.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { temperature: 0.7 }
+        });
+        return response.text?.trim() || '';
+    } catch (error) {
+        console.error('Gemini breakdown error:', error);
+        throw new Error('Failed to break down task.');
+    }
+}
+
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+/**
+ * General AI chat for productivity assistance
+ */
+export async function chat(messages: ChatMessage[], taskContext?: string): Promise<string> {
+    const systemPrompt = `You are a helpful productivity assistant for a task management app called Kanvax. 
+${taskContext ? `The user currently has these tasks:\n${taskContext}\n\n` : ''}
+Be concise, friendly, and actionable. Help users prioritize, plan, and stay productive.
+If asked "what should I work on", give a specific recommendation based on priority and due dates.`;
+
+    const formattedMessages = messages.map(m =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+    ).join('\n');
+
+    const prompt = `${systemPrompt}\n\nConversation:\n${formattedMessages}\n\nAssistant:`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { temperature: 0.8 }
+        });
+        return response.text?.trim() || 'I apologize, I could not generate a response.';
+    } catch (error) {
+        console.error('Gemini chat error:', error);
+        throw new Error('Failed to get AI response.');
+    }
+}
