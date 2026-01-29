@@ -146,3 +146,51 @@ If asked "what should I work on", give a specific recommendation based on priori
         throw new Error('Failed to get AI response.');
     }
 }
+
+export interface TaskData {
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
+    dueDate?: string | null;
+}
+
+/**
+ * Generate personalized productivity insights based on task data
+ */
+export async function generateInsights(tasks: TaskData[]): Promise<string> {
+    const now = new Date();
+    const taskDetails = tasks.map(t => ({
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        dueDate: t.dueDate || null,
+        isOverdue: t.dueDate && t.status !== 'done' && new Date(t.dueDate) < now
+    }));
+
+    const prompt = `You are a productivity coach analyzing a user's task data. Generate a personalized, encouraging insight.
+
+USER'S TASKS:
+${JSON.stringify(taskDetails, null, 2)}
+
+TODAY: ${now.toLocaleDateString()}
+
+Write 2-3 sentences that:
+1. Mention at least ONE specific task title from the data above
+2. Acknowledge completed tasks (status: "done")
+3. Give ONE actionable suggestion for pending tasks
+
+Be specific and reference actual task names! No bullet points or headers.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { temperature: 0.9 }
+        });
+        return response.text?.trim() || 'Keep making progress on your tasks!';
+    } catch (error) {
+        console.error('Gemini insights error:', error);
+        throw new Error('Failed to generate insights.');
+    }
+}
