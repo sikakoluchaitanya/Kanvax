@@ -2,8 +2,10 @@
 
 import { motion, PanInfo } from 'framer-motion';
 import { format, isToday, isPast, isTomorrow } from 'date-fns';
-import { Calendar, MoreHorizontal, Edit2, Trash2, GripVertical, Check } from 'lucide-react';
-import { useState } from 'react';
+import { Calendar, MoreHorizontal, Edit2, Trash2, GripVertical, Check, ListChecks } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { PriorityBadge, TagBadge } from '@/components/ui/Badge';
@@ -32,6 +34,15 @@ export function TaskCardSimple({
     const [showMenu, setShowMenu] = useState(false);
 
     const isCompleted = task.status === 'done';
+
+    // Calculate subtask progress
+    const subtaskStats = useMemo(() => {
+        const subtaskMatches = task.description.match(/\[([ xX])\]/g);
+        const completedMatches = task.description.match(/\[([xX])\]/g);
+        const total = subtaskMatches ? subtaskMatches.length : 0;
+        const completed = completedMatches ? completedMatches.length : 0;
+        return { total, completed, percent: total > 0 ? (completed / total) * 100 : 0 };
+    }, [task.description]);
 
     const formatDueDate = (date: Date | null) => {
         if (!date) return null;
@@ -98,6 +109,7 @@ export function TaskCardSimple({
                 scale: isDragging ? 1.05 : 1,
             }}
             transition={{ duration: 0.15 }}
+            whileHover={!isDragging ? { scale: 1.02, y: -2 } : undefined}
             whileDrag={{
                 scale: 1.05,
                 rotate: 2,
@@ -115,8 +127,8 @@ export function TaskCardSimple({
             <Card
                 variant="bordered"
                 className={cn(
-                    'p-4 transition-all duration-150 relative overflow-hidden',
-                    'hover:shadow-md hover:border-border',
+                    'p-4 transition-all duration-200 relative overflow-hidden',
+                    'hover:shadow-lg hover:border-accent/30',
                     isDragging && 'shadow-2xl ring-2 ring-accent/30',
                     // Completed task styling
                     isCompleted && 'bg-muted/30 border-border/50'
@@ -217,14 +229,39 @@ export function TaskCardSimple({
                     {task.title}
                 </h4>
 
-                {/* Description */}
+                {/* Description with Markdown rendering */}
                 {task.description && (
-                    <p className={cn(
-                        'text-sm text-muted-foreground mb-3 line-clamp-2',
+                    <div className={cn(
+                        'text-sm text-muted-foreground mb-3 prose prose-sm dark:prose-invert max-w-none',
+                        'prose-p:leading-snug prose-li:my-0 prose-ul:my-1',
                         isCompleted && 'line-through opacity-60'
                     )}>
-                        {task.description}
-                    </p>
+                        <div className={subtaskStats.total > 0 ? "" : "line-clamp-2"}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {task.description}
+                            </ReactMarkdown>
+                        </div>
+                    </div>
+                )}
+
+                {/* Subtask Progress Indicator */}
+                {subtaskStats.total > 0 && (
+                    <div className="mb-3 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                                <ListChecks size={10} />
+                                <span>{subtaskStats.completed}/{subtaskStats.total} Subtasks</span>
+                            </div>
+                            <span>{Math.round(subtaskStats.percent)}%</span>
+                        </div>
+                        <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${subtaskStats.percent}%` }}
+                                className="h-full bg-accent"
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {/* Tags */}
