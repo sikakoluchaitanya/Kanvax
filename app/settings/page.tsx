@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Settings,
@@ -25,25 +25,69 @@ import { useSidebar, SidebarProvider, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } f
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// Accent color options
+// Accent color options with light and dark mode values
 const accentColors = [
-    { name: 'Indigo', value: '238 76% 65%', class: 'bg-indigo-500' },
-    { name: 'Purple', value: '270 76% 65%', class: 'bg-purple-500' },
-    { name: 'Blue', value: '217 91% 60%', class: 'bg-blue-500' },
-    { name: 'Emerald', value: '160 84% 39%', class: 'bg-emerald-500' },
-    { name: 'Rose', value: '350 89% 60%', class: 'bg-rose-500' },
-    { name: 'Amber', value: '38 92% 50%', class: 'bg-amber-500' },
+    { name: 'Indigo', light: '#6366F1', dark: '#818CF8', class: 'bg-indigo-500' },
+    { name: 'Purple', light: '#8B5CF6', dark: '#A78BFA', class: 'bg-purple-500' },
+    { name: 'Blue', light: '#3B82F6', dark: '#60A5FA', class: 'bg-blue-500' },
+    { name: 'Emerald', light: '#10B981', dark: '#34D399', class: 'bg-emerald-500' },
+    { name: 'Rose', light: '#F43F5E', dark: '#FB7185', class: 'bg-rose-500' },
+    { name: 'Amber', light: '#F59E0B', dark: '#FBBF24', class: 'bg-amber-500' },
 ];
+
+const ACCENT_STORAGE_KEY = 'kanvax-accent-color';
+const PROFILE_STORAGE_KEY = 'kanvax-user-profile';
 
 function SettingsContent() {
     const { theme, setTheme, resolvedTheme } = useTheme();
     const { isCollapsed } = useSidebar();
     const { tasks, tags } = useTaskStore();
-    const [selectedAccent, setSelectedAccent] = useState(0);
-    const [userProfile, setUserProfile] = useState({
-        name: 'John Doe',
-        email: 'john@example.com',
+
+    // Load saved accent color from localStorage
+    const [selectedAccent, setSelectedAccent] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(ACCENT_STORAGE_KEY);
+            return saved ? parseInt(saved, 10) : 0;
+        }
+        return 0;
     });
+
+    // Load saved profile from localStorage
+    const [userProfile, setUserProfile] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch {
+                    return { name: 'User', email: '' };
+                }
+            }
+        }
+        return { name: 'User', email: '' };
+    });
+
+    // Apply accent color on mount and when it changes
+    useEffect(() => {
+        const color = accentColors[selectedAccent];
+        const accentValue = resolvedTheme === 'dark' ? color.dark : color.light;
+
+        // Update CSS custom properties
+        document.documentElement.style.setProperty('--accent', accentValue);
+        document.documentElement.style.setProperty('--ring', accentValue);
+        document.documentElement.style.setProperty('--sidebar-primary', accentValue);
+        document.documentElement.style.setProperty('--status-todo', accentValue);
+
+        // Save to localStorage
+        localStorage.setItem(ACCENT_STORAGE_KEY, selectedAccent.toString());
+    }, [selectedAccent, resolvedTheme]);
+
+    const handleAccentChange = (index: number) => {
+        setSelectedAccent(index);
+        toast.success(`Accent color changed to ${accentColors[index].name}`, {
+            description: 'Your preference has been saved.',
+        });
+    };
 
     const handleExportData = () => {
         const data = {
@@ -72,6 +116,8 @@ function SettingsContent() {
         if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
             localStorage.removeItem('kanvax-task-storage');
             localStorage.removeItem('kanvax-sidebar');
+            localStorage.removeItem(ACCENT_STORAGE_KEY);
+            localStorage.removeItem(PROFILE_STORAGE_KEY);
             toast.success('All data cleared!', {
                 description: 'Refresh the page to see the changes.',
             });
@@ -82,6 +128,7 @@ function SettingsContent() {
     };
 
     const handleSaveProfile = () => {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(userProfile));
         toast.success('Profile saved!', {
             description: 'Your profile information has been updated.',
         });
@@ -175,12 +222,7 @@ function SettingsContent() {
                                         {accentColors.map((color, index) => (
                                             <button
                                                 key={color.name}
-                                                onClick={() => {
-                                                    setSelectedAccent(index);
-                                                    toast.info(`Accent color changed to ${color.name}`, {
-                                                        description: 'This is a preview feature.',
-                                                    });
-                                                }}
+                                                onClick={() => handleAccentChange(index)}
                                                 className={`
                           w-10 h-10 rounded-full transition-all flex items-center justify-center
                           ${color.class}
