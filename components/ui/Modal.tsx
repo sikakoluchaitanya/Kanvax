@@ -63,7 +63,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                             sizeClasses[size]
                         )}
                     >
-                        <div className="bg-card rounded-xl shadow-xl border border-border overflow-hidden">
+                        <div className="bg-card rounded-xl shadow-xl border border-border">
                             {/* Header */}
                             {title && (
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-border">

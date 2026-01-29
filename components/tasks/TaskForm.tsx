@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, Label } from '@/components/ui/Input';
 import { TagBadge } from '@/components/ui/Badge';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { useTaskStore, defaultTags } from '@/store/taskStore';
 import { cn } from '@/lib/utils';
 import type { Priority, Status, Tag, TaskFormData } from '@/lib/types';
@@ -306,20 +307,15 @@ export function TaskForm({ isOpen, onClose, taskId }: TaskFormProps) {
                 {/* Due Date */}
                 <div className="space-y-2">
                     <Label htmlFor="dueDate">Due Date</Label>
-                    <Input
-                        id="dueDate"
-                        type="date"
-                        value={
-                            formData.dueDate
-                                ? format(new Date(formData.dueDate), 'yyyy-MM-dd')
-                                : ''
-                        }
-                        onChange={(e) =>
+                    <DatePicker
+                        value={formData.dueDate}
+                        onChange={(date) =>
                             setFormData({
                                 ...formData,
-                                dueDate: e.target.value ? new Date(e.target.value) : null,
+                                dueDate: date,
                             })
                         }
+                        placeholder="Select due date"
                     />
                 </div>
 
