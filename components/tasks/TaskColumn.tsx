@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { TaskCard } from './TaskCard';
 import { useTaskStore } from '@/store/taskStore';
 import { cn } from '@/lib/utils';
@@ -52,6 +53,16 @@ export function TaskColumn({ status, tasks }: TaskColumnProps) {
         const taskId = e.dataTransfer.getData('taskId');
         if (taskId) {
             moveTask(taskId, status);
+
+            // 🎉 Celebrate when task is completed!
+            if (status === 'done') {
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.7 },
+                    colors: ['#10b981', '#34d399', '#6ee7b7', '#a78bfa', '#c4b5fd']
+                });
+            }
         }
     };
 

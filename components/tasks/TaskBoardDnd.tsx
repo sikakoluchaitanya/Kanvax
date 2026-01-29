@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import { TaskColumnSimple } from './TaskColumnSimple';
 import { useTaskStore, useTasksByStatus } from '@/store/taskStore';
 import type { Task, Status } from '@/lib/types';
@@ -29,6 +30,16 @@ export function TaskBoardDnd() {
             const task = tasks.find(t => t.id === taskId);
             if (task && task.status !== dragOverColumn) {
                 moveTask(taskId, dragOverColumn);
+
+                // 🎉 Celebrate when task is completed!
+                if (dragOverColumn === 'done') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#10b981', '#34d399', '#6ee7b7', '#a78bfa', '#c4b5fd', '#fbbf24']
+                    });
+                }
             }
         }
         setDraggingTask(null);
