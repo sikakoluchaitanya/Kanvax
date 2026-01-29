@@ -10,9 +10,11 @@ import {
     LayoutGrid,
     List,
     X,
+    Sparkles,
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useTaskStore } from '@/store/taskStore';
+import { BrainDumpModal } from '@/components/ai/BrainDumpModal';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -24,6 +26,7 @@ export function Header({ title, subtitle }: HeaderProps) {
     const { setTheme, resolvedTheme } = useTheme();
     const { viewMode, setViewMode, filters, setFilters, setIsAddingTask } = useTaskStore();
     const [showSearch, setShowSearch] = useState(false);
+    const [showBrainDump, setShowBrainDump] = useState(false);
 
     const toggleTheme = () => {
         setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
@@ -174,6 +177,24 @@ export function Header({ title, subtitle }: HeaderProps) {
                         </AnimatePresence>
                     </button>
 
+                    {/* Brain Dump Button */}
+                    <button
+                        onClick={() => setShowBrainDump(true)}
+                        className={cn(
+                            'flex items-center gap-2 h-9 px-4 rounded-lg',
+                            'bg-gradient-to-r from-indigo-500 to-purple-600',
+                            'hover:from-indigo-600 hover:to-purple-700',
+                            'text-white font-medium text-sm',
+                            'transition-all duration-150',
+                            'shadow-sm hover:shadow-md',
+                            'active:scale-[0.98]'
+                        )}
+                        title="Extract tasks from notes using AI"
+                    >
+                        <Sparkles size={16} />
+                        <span>Brain Dump</span>
+                    </button>
+
                     {/* Add Task Button */}
                     <button
                         onClick={() => setIsAddingTask(true)}
@@ -191,6 +212,12 @@ export function Header({ title, subtitle }: HeaderProps) {
                     </button>
                 </div>
             </div>
+
+            {/* Brain Dump Modal */}
+            <BrainDumpModal
+                isOpen={showBrainDump}
+                onClose={() => setShowBrainDump(false)}
+            />
         </header>
     );
 }
