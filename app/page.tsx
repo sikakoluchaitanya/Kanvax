@@ -10,6 +10,7 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { TaskFilters } from '@/components/tasks/TaskFilters';
 import { StatCard } from '@/components/ui/StatCard';
+import { CommandPalette } from '@/components/ui/CommandPalette';
 import { useTaskStore, useTaskStats } from '@/store/taskStore';
 import { CheckCircle2, Clock, AlertCircle, ListTodo } from 'lucide-react';
 
@@ -96,6 +97,9 @@ function DashboardContent() {
         onClose={handleCloseForm}
         taskId={isEditingTask ? selectedTaskId : null}
       />
+
+      {/* Command Palette - Global keyboard shortcut Cmd+K */}
+      <CommandPalette />
     </div>
   );
 }
