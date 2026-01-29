@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 import "./globals.css";
 
 // Primary font - Modern geometric sans-serif
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body
         className={`${jakarta.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
+        <ToastProvider />
         {children}
       </body>
     </html>

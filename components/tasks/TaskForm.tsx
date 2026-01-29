@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, Label } from '@/components/ui/Input';
@@ -80,8 +81,14 @@ export function TaskForm({ isOpen, onClose, taskId }: TaskFormProps) {
 
         if (isEditing && taskId) {
             updateTask(taskId, formData);
+            toast.success('Task updated', {
+                description: formData.title,
+            });
         } else {
             addTask(formData);
+            toast.success('Task created', {
+                description: formData.title,
+            });
         }
 
         onClose();

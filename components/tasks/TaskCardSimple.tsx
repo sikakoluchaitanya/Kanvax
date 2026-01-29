@@ -4,6 +4,7 @@ import { motion, PanInfo } from 'framer-motion';
 import { format, isToday, isPast, isTomorrow } from 'date-fns';
 import { Calendar, MoreHorizontal, Edit2, Trash2, GripVertical, Check } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { PriorityBadge, TagBadge } from '@/components/ui/Badge';
 import { useTaskStore } from '@/store/taskStore';
@@ -57,9 +58,28 @@ export function TaskCardSimple({
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this task?')) {
-            deleteTask(task.id);
-        }
+        // Store the task for potential undo
+        const deletedTask = { ...task };
+        deleteTask(task.id);
+
+        toast.success('Task deleted', {
+            description: deletedTask.title,
+            action: {
+                label: 'Undo',
+                onClick: () => {
+                    // Re-add the task using the store's addTask
+                    useTaskStore.getState().addTask({
+                        title: deletedTask.title,
+                        description: deletedTask.description,
+                        priority: deletedTask.priority,
+                        status: deletedTask.status,
+                        dueDate: deletedTask.dueDate,
+                        tags: deletedTask.tags,
+                    });
+                    toast.info('Task restored');
+                },
+            },
+        });
         setShowMenu(false);
     };
 
