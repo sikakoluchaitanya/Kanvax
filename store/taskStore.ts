@@ -127,6 +127,10 @@ interface TaskState {
     // Tag Actions
     addTag: (tag: Omit<Tag, 'id'>) => void;
     deleteTag: (id: string) => void;
+
+    // User
+    userName: string;
+    setUserName: (name: string) => void;
 }
 
 const defaultFilters: TaskFilters = {
@@ -145,6 +149,7 @@ export const useTaskStore = create<TaskState>()(
             lastDeletedTask: null,
 
             // Initial UI State
+            userName: 'there',
             viewMode: 'board',
             filters: defaultFilters,
             selectedTaskId: null,
@@ -236,6 +241,8 @@ export const useTaskStore = create<TaskState>()(
                     })),
                 }));
             },
+
+            setUserName: (name) => set({ userName: name }),
         }),
         {
             name: 'kanvax-task-storage',
@@ -243,6 +250,7 @@ export const useTaskStore = create<TaskState>()(
                 tasks: state.tasks,
                 tags: state.tags,
                 viewMode: state.viewMode,
+                userName: state.userName,
             }),
         }
     )

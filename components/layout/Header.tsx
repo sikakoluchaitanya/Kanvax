@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
@@ -26,21 +26,61 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
     const { setTheme, resolvedTheme } = useTheme();
-    const { viewMode, setViewMode, filters, setFilters, setIsAddingTask } = useTaskStore();
+    const { viewMode, setViewMode, filters, setFilters, setIsAddingTask, userName, setUserName } = useTaskStore();
     const { isMobile, setIsMobileOpen } = useSidebar();
     const [showSearch, setShowSearch] = useState(false);
     const [showBrainDump, setShowBrainDump] = useState(false);
+    const [greeting, setGreeting] = useState('Hello');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [tempName, setTempName] = useState(userName);
+    const nameInputRef = useRef<HTMLInputElement>(null);
+
+    // Sync tempName with userName when it changes
+    useEffect(() => {
+        setTempName(userName);
+    }, [userName]);
+
+    // Update greeting based on current time
+    useEffect(() => {
+        const updateGreeting = () => {
+            const hour = new Date().getHours();
+            if (hour < 12) setGreeting('Good morning');
+            else if (hour < 18) setGreeting('Good afternoon');
+            else setGreeting('Good evening');
+        };
+
+        updateGreeting();
+        const interval = setInterval(updateGreeting, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, []);
+
+    // Focus input when editing starts
+    useEffect(() => {
+        if (isEditingName && nameInputRef.current) {
+            nameInputRef.current.focus();
+            nameInputRef.current.select();
+        }
+    }, [isEditingName]);
+
+    const handleNameSubmit = () => {
+        if (tempName.trim()) {
+            setUserName(tempName.trim());
+        } else {
+            setTempName(userName); // Revert if empty
+        }
+        setIsEditingName(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleNameSubmit();
+        if (e.key === 'Escape') {
+            setTempName(userName);
+            setIsEditingName(false);
+        }
+    };
 
     const toggleTheme = () => {
         setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
-    };
-
-    // Get greeting based on time
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 18) return 'Good afternoon';
-        return 'Good evening';
     };
 
     return (
@@ -64,8 +104,33 @@ export function Header({ title, subtitle }: HeaderProps) {
                     )}
 
                     <div className="flex flex-col">
-                        <h1 className="text-base md:text-lg font-semibold text-foreground">
-                            {title || `${getGreeting()} 👋`}
+                        <h1 className="text-base md:text-lg font-semibold text-foreground flex items-center gap-1.5">
+                            {title || (
+                                <>
+                                    <span className="text-muted-foreground font-normal">{greeting},</span>
+                                    {isEditingName ? (
+                                        <input
+                                            ref={nameInputRef}
+                                            type="text"
+                                            value={tempName}
+                                            onChange={(e) => setTempName(e.target.value)}
+                                            onBlur={handleNameSubmit}
+                                            onKeyDown={handleKeyDown}
+                                            className="bg-transparent border-b-2 border-accent outline-none min-w-[60px] w-auto text-foreground p-0 m-0 h-auto font-semibold"
+                                            style={{ width: `${Math.max(tempName.length * 0.6, 3)}em` }}
+                                        />
+                                    ) : (
+                                        <span
+                                            onClick={() => setIsEditingName(true)}
+                                            className="cursor-pointer hover:text-accent transition-colors hover:underline decoration-dotted underline-offset-4"
+                                            title="Click to edit your name"
+                                        >
+                                            {userName}
+                                        </span>
+                                    )}
+                                    <span>👋</span>
+                                </>
+                            )}
                         </h1>
                         {subtitle && (
                             <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">{subtitle}</p>

@@ -11,6 +11,7 @@ import { TaskForm } from '@/components/tasks/TaskForm';
 import { TaskFilters } from '@/components/tasks/TaskFilters';
 import { StatCard } from '@/components/ui/StatCard';
 import { CommandPalette } from '@/components/ui/CommandPalette';
+import { WelcomeModal } from '@/components/ui/WelcomeModal';
 import { useTaskStore, useTaskStats } from '@/store/taskStore';
 import { CheckCircle2, Clock, AlertCircle, ListTodo } from 'lucide-react';
 
@@ -101,6 +102,9 @@ function DashboardContent() {
 
       {/* Command Palette - Global keyboard shortcut Cmd+K */}
       <CommandPalette />
+
+      {/* Welcome Modal - First visit onboarding */}
+      <WelcomeModal />
     </div>
   );
 }

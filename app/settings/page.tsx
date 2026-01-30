@@ -41,7 +41,7 @@ const PROFILE_STORAGE_KEY = 'kanvax-user-profile';
 function SettingsContent() {
     const { theme, setTheme, resolvedTheme } = useTheme();
     const { isCollapsed } = useSidebar();
-    const { tasks, tags } = useTaskStore();
+    const { tasks, tags, userName, setUserName } = useTaskStore();
 
     // Load saved accent color from localStorage
     const [selectedAccent, setSelectedAccent] = useState(() => {
@@ -52,20 +52,29 @@ function SettingsContent() {
         return 0;
     });
 
-    // Load saved profile from localStorage
-    const [userProfile, setUserProfile] = useState(() => {
+    // Load saved profile from localStorage (email only - name comes from store)
+    const [userEmail, setUserEmail] = useState(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
             if (saved) {
                 try {
-                    return JSON.parse(saved);
+                    const parsed = JSON.parse(saved);
+                    return parsed.email || '';
                 } catch {
-                    return { name: 'User', email: '' };
+                    return '';
                 }
             }
         }
-        return { name: 'User', email: '' };
+        return '';
     });
+
+    // Local state for editing name (synced with store)
+    const [editName, setEditName] = useState(userName);
+
+    // Sync editName when userName changes from other sources (like header edit)
+    useEffect(() => {
+        setEditName(userName);
+    }, [userName]);
 
     // Apply accent color on mount and when it changes
     useEffect(() => {
@@ -118,6 +127,7 @@ function SettingsContent() {
             localStorage.removeItem('kanvax-sidebar');
             localStorage.removeItem(ACCENT_STORAGE_KEY);
             localStorage.removeItem(PROFILE_STORAGE_KEY);
+            localStorage.removeItem('kanvax-welcome-seen');
             toast.success('All data cleared!', {
                 description: 'Refresh the page to see the changes.',
             });
@@ -128,7 +138,17 @@ function SettingsContent() {
     };
 
     const handleSaveProfile = () => {
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(userProfile));
+        // Update the store userName (this affects the greeting)
+        if (editName.trim()) {
+            setUserName(editName.trim());
+        }
+
+        // Save email to localStorage
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({
+            name: editName.trim() || userName,
+            email: userEmail
+        }));
+
         toast.success('Profile saved!', {
             description: 'Your profile information has been updated.',
         });
@@ -263,10 +283,14 @@ function SettingsContent() {
                                         </label>
                                         <input
                                             type="text"
-                                            value={userProfile.name}
-                                            onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            placeholder="Enter your name"
                                             className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
                                         />
+                                        <p className="text-xs text-muted-foreground mt-1.5">
+                                            This name appears in your greeting
+                                        </p>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-foreground mb-2 block">
@@ -274,10 +298,14 @@ function SettingsContent() {
                                         </label>
                                         <input
                                             type="email"
-                                            value={userProfile.email}
-                                            onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
+                                            value={userEmail}
+                                            onChange={(e) => setUserEmail(e.target.value)}
+                                            placeholder="your@email.com"
                                             className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
                                         />
+                                        <p className="text-xs text-muted-foreground mt-1.5">
+                                            For future features like notifications
+                                        </p>
                                     </div>
                                 </div>
 
