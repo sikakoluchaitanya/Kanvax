@@ -100,6 +100,7 @@ interface TaskState {
     // Data
     tasks: Task[];
     tags: Tag[];
+    lastDeletedTask: Task | null;
 
     // UI State
     viewMode: ViewMode;
@@ -112,6 +113,7 @@ interface TaskState {
     addTask: (data: TaskFormData) => void;
     updateTask: (id: string, data: Partial<TaskFormData>) => void;
     deleteTask: (id: string) => void;
+    restoreTask: () => void;
     moveTask: (id: string, newStatus: Task['status']) => void;
 
     // UI Actions
@@ -140,6 +142,7 @@ export const useTaskStore = create<TaskState>()(
             // Initial Data
             tasks: sampleTasks,
             tags: defaultTags,
+            lastDeletedTask: null,
 
             // Initial UI State
             viewMode: 'board',
@@ -170,10 +173,23 @@ export const useTaskStore = create<TaskState>()(
             },
 
             deleteTask: (id) => {
+                const taskToDelete = get().tasks.find(task => task.id === id);
                 set((state) => ({
+                    lastDeletedTask: taskToDelete || null,
                     tasks: state.tasks.filter((task) => task.id !== id),
                 }));
             },
+
+            restoreTask: () => {
+                const { lastDeletedTask } = get();
+                if (lastDeletedTask) {
+                    set((state) => ({
+                        tasks: [...state.tasks, lastDeletedTask],
+                        lastDeletedTask: null,
+                    }));
+                }
+            },
+
 
             moveTask: (id, newStatus) => {
                 set((state) => ({

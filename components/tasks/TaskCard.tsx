@@ -2,12 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { format, isToday, isPast, isTomorrow } from 'date-fns';
-import { Calendar, MoreHorizontal, Clock, Edit2, Trash2 } from 'lucide-react';
+import { Calendar, MoreHorizontal, Clock, Edit2, Trash2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { PriorityBadge, TagBadge } from '@/components/ui/Badge';
 import { useTaskStore } from '@/store/taskStore';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { Task } from '@/lib/types';
 
 interface TaskCardProps {
@@ -16,7 +17,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, isDragging }: TaskCardProps) {
-    const { setSelectedTask, setIsEditingTask, deleteTask } = useTaskStore();
+    const { setSelectedTask, setIsEditingTask, deleteTask, restoreTask } = useTaskStore();
     const [showMenu, setShowMenu] = useState(false);
 
     const formatDueDate = (date: Date | null) => {
@@ -44,10 +45,17 @@ export function TaskCard({ task, isDragging }: TaskCardProps) {
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this task?')) {
-            deleteTask(task.id);
-        }
+        deleteTask(task.id);
         setShowMenu(false);
+        toast('Task deleted', {
+            description: task.title,
+            action: {
+                label: 'Undo',
+                onClick: () => restoreTask(),
+            },
+            icon: <Trash2 size={16} />,
+            duration: 5000,
+        });
     };
 
     return (

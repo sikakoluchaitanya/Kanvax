@@ -30,7 +30,7 @@ export function TaskCardSimple({
     onDragEnd,
     onDrag
 }: TaskCardSimpleProps) {
-    const { setSelectedTask, setIsEditingTask, deleteTask } = useTaskStore();
+    const { setSelectedTask, setIsEditingTask, deleteTask, restoreTask } = useTaskStore();
     const [showMenu, setShowMenu] = useState(false);
 
     const isCompleted = task.status === 'done';
@@ -69,29 +69,17 @@ export function TaskCardSimple({
     };
 
     const handleDelete = () => {
-        // Store the task for potential undo
-        const deletedTask = { ...task };
         deleteTask(task.id);
-
-        toast.success('Task deleted', {
-            description: deletedTask.title,
+        setShowMenu(false);
+        toast('Task deleted', {
+            description: task.title,
             action: {
                 label: 'Undo',
-                onClick: () => {
-                    // Re-add the task using the store's addTask
-                    useTaskStore.getState().addTask({
-                        title: deletedTask.title,
-                        description: deletedTask.description,
-                        priority: deletedTask.priority,
-                        status: deletedTask.status,
-                        dueDate: deletedTask.dueDate,
-                        tags: deletedTask.tags,
-                    });
-                    toast.info('Task restored');
-                },
+                onClick: () => restoreTask(),
             },
+            icon: <Trash2 size={16} />,
+            duration: 5000,
         });
-        setShowMenu(false);
     };
 
     return (

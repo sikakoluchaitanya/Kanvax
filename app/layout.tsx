@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
+import { KeyboardShortcutsModal } from "@/components/ui/KeyboardShortcutsModal";
 import "./globals.css";
 
 // Primary font - Modern geometric sans-serif
@@ -53,8 +54,8 @@ export default function RootLayout({
         <ToastProvider />
         {children}
         <AIChatWidget />
+        <KeyboardShortcutsModal />
       </body>
     </html>
   );
 }
-

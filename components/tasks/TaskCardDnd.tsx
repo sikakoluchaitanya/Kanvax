@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { PriorityBadge, TagBadge } from '@/components/ui/Badge';
 import { useTaskStore } from '@/store/taskStore';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { Task } from '@/lib/types';
 
 interface TaskCardDndProps {
@@ -20,7 +21,7 @@ interface TaskCardDndProps {
 }
 
 export function TaskCardDnd({ task, index = 0, isDragging: isDraggingProp, isHidden }: TaskCardDndProps) {
-    const { setSelectedTask, setIsEditingTask, deleteTask } = useTaskStore();
+    const { setSelectedTask, setIsEditingTask, deleteTask, restoreTask } = useTaskStore();
     const [showMenu, setShowMenu] = useState(false);
 
     const {
@@ -63,10 +64,17 @@ export function TaskCardDnd({ task, index = 0, isDragging: isDraggingProp, isHid
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this task?')) {
-            deleteTask(task.id);
-        }
+        deleteTask(task.id);
         setShowMenu(false);
+        toast('Task deleted', {
+            description: task.title,
+            action: {
+                label: 'Undo',
+                onClick: () => restoreTask(),
+            },
+            icon: <Trash2 size={16} />,
+            duration: 5000,
+        });
     };
 
     // Hide the original card while dragging (we show DragOverlay instead)

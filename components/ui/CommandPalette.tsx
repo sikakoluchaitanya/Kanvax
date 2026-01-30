@@ -138,11 +138,16 @@ export function CommandPalette() {
 
             // Quick shortcuts when palette is closed
             if (!isOpen && !e.metaKey && !e.ctrlKey) {
-                if (e.key === 'n' && document.activeElement?.tagName !== 'INPUT') {
+                const activeEl = document.activeElement;
+                const isTyping = activeEl?.tagName === 'INPUT' ||
+                    activeEl?.tagName === 'TEXTAREA' ||
+                    (activeEl as HTMLElement)?.isContentEditable;
+
+                if (e.key === 'n' && !isTyping) {
                     e.preventDefault();
                     setIsAddingTask(true);
                 }
-                if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+                if (e.key === '/' && !isTyping) {
                     e.preventDefault();
                     setIsOpen(true);
                 }
