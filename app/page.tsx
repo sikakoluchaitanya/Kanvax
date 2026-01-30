@@ -15,7 +15,7 @@ import { useTaskStore, useTaskStats } from '@/store/taskStore';
 import { CheckCircle2, Clock, AlertCircle, ListTodo } from 'lucide-react';
 
 function DashboardContent() {
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, isMobile } = useSidebar();
   const { viewMode, isAddingTask, isEditingTask, selectedTaskId, setIsAddingTask, setIsEditingTask, setSelectedTask } = useTaskStore();
   const stats = useTaskStats();
 
@@ -25,7 +25,8 @@ function DashboardContent() {
     setSelectedTask(null);
   };
 
-  const sidebarWidth = isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+  // No padding on mobile (sidebar is overlay), padding on desktop
+  const sidebarWidth = isMobile ? 0 : (isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH);
 
   return (
     <div className="min-h-screen bg-background">

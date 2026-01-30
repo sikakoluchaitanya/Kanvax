@@ -9,6 +9,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Settings,
+    X,
 } from 'lucide-react';
 import { useSidebar, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/components/providers/SidebarProvider';
 import { cn } from '@/lib/utils';
@@ -43,24 +44,16 @@ const bottomNavItems: NavItem[] = [
     },
 ];
 
-export function Sidebar() {
+function SidebarContent({ onClose }: { onClose?: () => void }) {
     const pathname = usePathname();
-    const { isCollapsed, toggle } = useSidebar();
+    const { isCollapsed, isMobile } = useSidebar();
+    const showLabels = !isCollapsed || isMobile;
 
     return (
-        <motion.aside
-            initial={false}
-            animate={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className={cn(
-                'fixed left-0 top-0 z-40 h-screen',
-                'bg-sidebar border-r border-sidebar-border',
-                'flex flex-col'
-            )}
-        >
+        <>
             {/* Logo */}
-            <div className="flex items-center h-16 px-4 border-b border-sidebar-border">
-                <Link href="/" className="flex items-center gap-3">
+            <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+                <Link href="/" className="flex items-center gap-3" onClick={onClose}>
                     <motion.div
                         className={cn(
                             'flex items-center justify-center w-9 h-9 rounded-lg',
@@ -72,7 +65,7 @@ export function Sidebar() {
                         <span className="text-lg font-bold text-white">K</span>
                     </motion.div>
                     <AnimatePresence>
-                        {!isCollapsed && (
+                        {showLabels && (
                             <motion.span
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -85,13 +78,23 @@ export function Sidebar() {
                         )}
                     </AnimatePresence>
                 </Link>
+
+                {/* Mobile close button */}
+                {isMobile && onClose && (
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <X size={20} className="text-muted-foreground" />
+                    </button>
+                )}
             </div>
 
             {/* Main Navigation */}
             <nav className="flex-1 px-3 py-6 overflow-y-auto">
                 <div className="space-y-1">
                     <AnimatePresence>
-                        {!isCollapsed && (
+                        {showLabels && (
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -109,13 +112,14 @@ export function Sidebar() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    onClick={onClose}
                                     className={cn(
                                         'relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
                                         'group',
                                         isActive
                                             ? 'bg-accent/10 text-accent font-medium'
                                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                                        isCollapsed && 'justify-center px-2'
+                                        !showLabels && 'justify-center px-2'
                                     )}
                                 >
                                     <span className={cn(
@@ -126,7 +130,7 @@ export function Sidebar() {
                                     </span>
 
                                     <AnimatePresence>
-                                        {!isCollapsed && (
+                                        {showLabels && (
                                             <motion.span
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
@@ -138,14 +142,14 @@ export function Sidebar() {
                                         )}
                                     </AnimatePresence>
 
-                                    {!isCollapsed && item.badge && (
+                                    {showLabels && item.badge && (
                                         <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-medium rounded-full bg-accent text-white">
                                             {item.badge}
                                         </span>
                                     )}
 
-                                    {/* Tooltip for collapsed state */}
-                                    {isCollapsed && (
+                                    {/* Tooltip for collapsed state (desktop only) */}
+                                    {!showLabels && !isMobile && (
                                         <div className={cn(
                                             'absolute left-full ml-3 px-2 py-1.5',
                                             'bg-foreground text-background text-xs font-medium rounded-md',
@@ -171,20 +175,21 @@ export function Sidebar() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={onClose}
                             className={cn(
                                 'relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
                                 'group',
                                 isActive
                                     ? 'bg-accent/10 text-accent font-medium'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                                isCollapsed && 'justify-center px-2'
+                                !showLabels && 'justify-center px-2'
                             )}
                         >
                             <span className={cn(isActive && 'text-accent')}>
                                 {item.icon}
                             </span>
                             <AnimatePresence>
-                                {!isCollapsed && (
+                                {showLabels && (
                                     <motion.span
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -197,7 +202,7 @@ export function Sidebar() {
                             </AnimatePresence>
 
                             {/* Tooltip for collapsed state */}
-                            {isCollapsed && (
+                            {!showLabels && !isMobile && (
                                 <div className={cn(
                                     'absolute left-full ml-3 px-2 py-1.5',
                                     'bg-foreground text-background text-xs font-medium rounded-md',
@@ -212,6 +217,63 @@ export function Sidebar() {
                     );
                 })}
             </div>
+        </>
+    );
+}
+
+export function Sidebar() {
+    const { isCollapsed, isMobile, isMobileOpen, toggle, closeMobile } = useSidebar();
+
+    // Mobile overlay sidebar
+    if (isMobile) {
+        return (
+            <AnimatePresence>
+                {isMobileOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={closeMobile}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                        />
+
+                        {/* Sidebar */}
+                        <motion.aside
+                            initial={{ x: -SIDEBAR_WIDTH }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -SIDEBAR_WIDTH }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className={cn(
+                                'fixed left-0 top-0 z-50 h-screen',
+                                'bg-sidebar border-r border-sidebar-border',
+                                'flex flex-col'
+                            )}
+                            style={{ width: SIDEBAR_WIDTH }}
+                        >
+                            <SidebarContent onClose={closeMobile} />
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
+        );
+    }
+
+    // Desktop sidebar
+    return (
+        <motion.aside
+            initial={false}
+            animate={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className={cn(
+                'fixed left-0 top-0 z-40 h-screen',
+                'bg-sidebar border-r border-sidebar-border',
+                'flex flex-col',
+                'hidden md:flex' // Hide on mobile
+            )}
+        >
+            <SidebarContent />
 
             {/* Collapse Button */}
             <motion.button
