@@ -1,9 +1,79 @@
 import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
-// Initialize with API key from environment
-const ai = new GoogleGenAI({
+// Initialize Gemini
+const geminiAI = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY || process.env.Gemini_api || ''
 });
+
+// Initialize Groq as fallback
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY || ''
+});
+
+// Constants
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GROQ_MODEL = 'moonshotai/kimi-k2-instruct'; // Fast & capable
+
+/**
+ * Check if error is a rate limit error (429)
+ */
+function isRateLimitError(error: unknown): boolean {
+    if (error && typeof error === 'object') {
+        const err = error as { status?: number; message?: string };
+        return err.status === 429 || (err.message?.includes('429') ?? false) || (err.message?.includes('quota') ?? false);
+    }
+    return false;
+}
+
+/**
+ * Generate content with Groq (fallback)
+ */
+async function generateWithGroq(prompt: string, temperature: number = 0.7, jsonMode: boolean = false): Promise<string> {
+    console.log('⚡ Using Groq fallback...');
+    const response = await groq.chat.completions.create({
+        model: GROQ_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature,
+        ...(jsonMode && { response_format: { type: 'json_object' } })
+    });
+    return response.choices[0]?.message?.content || '';
+}
+
+/**
+ * Generate content with Gemini, fallback to Groq on rate limit
+ */
+async function generateWithFallback(
+    prompt: string,
+    options: { temperature?: number; jsonMode?: boolean } = {}
+): Promise<string> {
+    const { temperature = 0.7, jsonMode = false } = options;
+
+    try {
+        // Try Gemini first
+        const response = await geminiAI.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: prompt,
+            config: {
+                temperature,
+                ...(jsonMode && { responseMimeType: 'application/json' })
+            }
+        });
+        return response.text?.trim() || '';
+    } catch (error) {
+        // If rate limited, fallback to Groq
+        if (isRateLimitError(error)) {
+            console.warn('⚠️ Gemini rate limited, falling back to Groq...');
+            return generateWithGroq(prompt, temperature, jsonMode);
+        }
+        // Re-throw non-rate-limit errors
+        throw error;
+    }
+}
+
+// ============================================
+// EXPORTED FUNCTIONS
+// ============================================
 
 export interface ExtractedTask {
     title: string;
@@ -38,19 +108,24 @@ ${rawText}
 Return the JSON array of tasks:`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                temperature: 0.7
-            }
-        });
+        const responseText = await generateWithFallback(prompt, { temperature: 0.7, jsonMode: true });
 
-        const tasks: ExtractedTask[] = JSON.parse(response.text as string);
+        // Handle potential markdown code blocks from Groq
+        let jsonText = responseText.trim();
+        if (jsonText.startsWith('```json')) {
+            jsonText = jsonText.slice(7);
+        } else if (jsonText.startsWith('```')) {
+            jsonText = jsonText.slice(3);
+        }
+        if (jsonText.endsWith('```')) {
+            jsonText = jsonText.slice(0, -3);
+        }
+        jsonText = jsonText.trim();
+
+        const tasks: ExtractedTask[] = JSON.parse(jsonText);
         return tasks;
     } catch (error) {
-        console.error('Gemini API error:', error);
+        console.error('Task extraction error:', error);
         throw new Error('Failed to extract tasks. Please try again.');
     }
 }
@@ -73,14 +148,9 @@ Write an enhanced description that:
 Return ONLY the enhanced description text, no quotes, no explanation.`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { temperature: 0.7 }
-        });
-        return response.text?.trim() || briefDescription;
+        return await generateWithFallback(prompt, { temperature: 0.7 });
     } catch (error) {
-        console.error('Gemini enhance error:', error);
+        console.error('Enhance description error:', error);
         throw new Error('Failed to enhance description.');
     }
 }
@@ -102,14 +172,9 @@ Return ONLY a markdown checklist (no intro text) like:
 Keep subtasks specific and actionable. Start each with a verb.`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { temperature: 0.7 }
-        });
-        return response.text?.trim() || '';
+        return await generateWithFallback(prompt, { temperature: 0.7 });
     } catch (error) {
-        console.error('Gemini breakdown error:', error);
+        console.error('Breakdown task error:', error);
         throw new Error('Failed to break down task.');
     }
 }
@@ -135,14 +200,10 @@ If asked "what should I work on", give a specific recommendation based on priori
     const prompt = `${systemPrompt}\n\nConversation:\n${formattedMessages}\n\nAssistant:`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { temperature: 0.8 }
-        });
-        return response.text?.trim() || 'I apologize, I could not generate a response.';
+        const response = await generateWithFallback(prompt, { temperature: 0.8 });
+        return response || 'I apologize, I could not generate a response.';
     } catch (error) {
-        console.error('Gemini chat error:', error);
+        console.error('Chat error:', error);
         throw new Error('Failed to get AI response.');
     }
 }
@@ -183,14 +244,10 @@ Write 2-3 sentences that:
 Be specific and reference actual task names! No bullet points or headers.`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { temperature: 0.9 }
-        });
-        return response.text?.trim() || 'Keep making progress on your tasks!';
+        const response = await generateWithFallback(prompt, { temperature: 0.9 });
+        return response || 'Keep making progress on your tasks!';
     } catch (error) {
-        console.error('Gemini insights error:', error);
+        console.error('Insights error:', error);
         throw new Error('Failed to generate insights.');
     }
 }
